@@ -7,15 +7,21 @@ import ffmpeg
 
 def main(source_dir, destination):
     """
-    Find MP3s in the source directory and find enough duration to fill a 74-minute MD set to LP4
+    Find audio files in the source directory and find enough duration to fill a 74-minute MD set to LP4
 
-    :param source_dir: Path - directory housing MP3 files to be searched recursively
+    :param source_dir: Path - directory housing audio files to be searched recursively
     :param destination: Path - directory to copy files to
     """
     file_list = list()
     tracks_already_included = list()
-    for file in source_dir.glob('**/*.mp3'):
-        file_list.append(file)
+
+    # support for multiple extensions
+    # Capitalisation (e.g. ".MP3") may be an issue on some file systems
+    # but how you've named your files is beyond scope of this script!
+    extensions = [".mp3", ".m4a", ".flac", ".alac", ".aac", ".mp4", ".webm", ".opus", ".ogg", ".wav", ".aiff"]
+    for extension in extensions:
+        for file in source_dir.glob(f'**/*{extension}'):
+            file_list.append(file)
 
     # 74 minute disc, LP4
     available_seconds = (74 * 60 * 4)
@@ -29,8 +35,11 @@ def main(source_dir, destination):
         try:
             title_artist = f"{ffmpeg.probe(current_file)['format']['tags']['title']} " \
                            f"- {ffmpeg.probe(current_file)['format']['tags']['artist']}"
+        except KeyError:
+            print(f"\nID3 tags missing from {current_file}, using filename instead")
+            title_artist = current_file.name
         except ffmpeg.Error:
-            print(f"\n{current_file} looks weird, skipping it.\n")
+            print(f"\nffmpeg thinks {current_file} looks weird, skipping it.\n")
             continue
 
         if title_artist in tracks_already_included:
