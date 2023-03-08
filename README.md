@@ -1,4 +1,4 @@
-# md_disc_filler
+# LP4 MD Disc Filler
 A simple script to copy enough random MP3 files for an LP4 MD (MD-LP).
 
 LP4 encoding handles lofi stuff really well and [Web MiniDisc Pro](https://web.minidisc.wiki/) takes whatever ffmpeg can handle as input. 
