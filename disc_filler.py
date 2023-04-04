@@ -1,4 +1,5 @@
 import argparse
+import os
 import random
 import shutil
 from pathlib import Path
@@ -20,7 +21,7 @@ def main(source_dir, destination):
     # but how you've named your files is beyond scope of this script!
     extensions = [".mp3", ".m4a", ".flac", ".alac", ".aac", ".mp4", ".webm", ".opus", ".ogg", ".wav", ".aiff"]
     for extension in extensions:
-        for file in source_dir.glob(f'**/*{extension}'):
+        for file in source_dir.glob(os.path.join('**', f'*{extension}')):
             file_list.append(file)
 
     # 74 minute disc, LP4
@@ -31,23 +32,25 @@ def main(source_dir, destination):
     while available_seconds > 30:
         # Grab a random file and remove it from the list
         current_file = file_list[random.randint(0, (len(file_list)) - 1)]
+        current_path = os.path.normpath(current_file)
 
         try:
-            title_artist = f"{ffmpeg.probe(current_file)['format']['tags']['title']} " \
-                           f"- {ffmpeg.probe(current_file)['format']['tags']['artist']}"
+            title_artist = f"{ffmpeg.probe(current_path)['format']['tags']['title']} " \
+                           f"- {ffmpeg.probe(current_path)['format']['tags']['artist']}"
         except KeyError:
             print(f"\nID3 tags missing from {current_file}, using filename instead")
             title_artist = current_file.name
         except ffmpeg.Error:
             print(f"\nffmpeg thinks {current_file} looks weird, skipping it.\n")
             continue
+    
 
         if title_artist in tracks_already_included:
             print("\nTrack already included, skipping\n")
             continue
         else:
             try:
-                duration = float(ffmpeg.probe(current_file)['format']['duration'])
+                duration = float(ffmpeg.probe(current_path)['format']['duration'])
                 print(f"File: {current_file}\n"
                       f"Time remaining: {available_seconds}\n"
                       f"File duration: {duration}")
@@ -58,9 +61,9 @@ def main(source_dir, destination):
 
                     randomise_filename = True
                     if randomise_filename:
-                        output_filename = Path(str(destination) + f"/{str(random.randint(0, 99))} " + current_file.name)
+                        output_filename = Path(os.path.join(str(destination), f"{str(random.randint(0, 99))} " + current_file.name))
                     else:
-                        output_filename = Path(str(destination) + f"/" + current_file.name)
+                        output_filename = Path(os.path.join(str(destination), current_file.name))
                     # copy the file to the output directory
                     shutil.copyfile(current_file, output_filename)
 
@@ -79,4 +82,4 @@ if __name__ == '__main__':
     parser.add_argument('--output-dir')
     args = parser.parse_args()
 
-    main(Path(args.input_dir), args.output_dir)
+    main(Path(args.input_dir), Path(args.output_dir))
